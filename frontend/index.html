@@ -2,186 +2,85 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema Financiero</title>
+    <title>Sistema Multi-Empresa</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
     <style>
-        /* === ELIMINAR FLECHAS/BOTONES DE LOS INPUTS NUMBER === */
-        /* Para Chrome, Safari, Edge, Opera */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        /* Para Firefox */
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
+        
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
 
-        /* === CONFIGURACIÓN GENERAL Y COLORES === */
+
         :root {
-            --bg-body: #1a1a2e;       
-            --bg-card: #16213e;       
-            --primary-purple: #8a2be2; 
-            --hover-purple: #6a1b9a;   
-            --text-main: #e0e0e0;     
-            
-            --txt-blue: #00d4ff;      
-            --txt-yellow: #ffd700;    
-            --txt-orange: #ff8c00;    
+            --bg-body: #1a1a2e; --bg-card: #16213e;       
+            --primary-purple: #8a2be2; --hover-purple: #6a1b9a;   
+            --text-main: #e0e0e0; --txt-blue: #00d4ff;      
+            --txt-yellow: #ffd700; --txt-orange: #ff8c00;    
         }
 
-        body { 
-            font-family: 'Arial', sans-serif; 
-            background-color: var(--bg-body); 
-            color: var(--text-main);
-            padding: 20px; 
-            max-width: 950px; 
-            margin: auto; 
-        }
-
-        h1 { 
-            text-align: center; 
-            color: var(--txt-blue); 
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
+        body { font-family: 'Arial', sans-serif; background-color: var(--bg-body); color: var(--text-main); padding: 20px; max-width: 950px; margin: auto; }
+        h1 { text-align: center; color: var(--txt-blue); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;}
         h3 { color: var(--txt-orange); border-bottom: 1px solid #444; padding-bottom: 10px; }
+
         
-        /* === NAVEGACIÓN === */
+        .company-header { 
+            text-align: center; margin-bottom: 30px; background: #0f3460; padding: 20px; border-radius: 10px; border: 1px solid var(--primary-purple); 
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.2);
+        }
+        .company-header select { font-size: 1.1em; text-align: center; border: 2px solid var(--txt-blue); background: #1a1a2e; color: white; width: 60%; padding: 10px; border-radius: 5px; cursor: pointer; }
+        .company-header input { font-size: 1.1em; text-align: center; border: none; border-bottom: 2px solid var(--txt-yellow); background: transparent; color: white; width: 60%; padding: 5px; display: none; margin-top: 10px; }
+        .company-header input:focus { outline: none; border-bottom-color: var(--primary-purple); }
+
+        
         .nav { display: flex; gap: 15px; margin-bottom: 30px; justify-content: center; }
+        .nav button { padding: 12px 30px; cursor: pointer; border: 2px solid var(--primary-purple); background: transparent; color: white; font-size: 16px; border-radius: 25px; transition: 0.3s; font-weight: bold; }
+        .nav button.active, .nav button:hover { background: var(--primary-purple); box-shadow: 0 0 15px rgba(138, 43, 226, 0.5); }
+
         
-        .nav button { 
-            padding: 12px 30px; 
-            cursor: pointer; 
-            border: 2px solid var(--primary-purple); 
-            background: transparent; 
-            color: white;
-            font-size: 16px; 
-            border-radius: 25px; 
-            transition: 0.3s; 
-            font-family: 'Arial', sans-serif;
-            font-weight: bold;
-        }
+        .pdf-controls { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 15px; }
+        .pdf-btn { background: #ff4757; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .pdf-btn:hover { background: #ff6b81; transform: scale(1.05); }
 
-        .nav button.active, .nav button:hover { 
-            background: var(--primary-purple); 
-            color: white; 
-            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5); 
-        }
-
-        /* === TARJETAS Y LAYOUT === */
+        
         .section { display: none; animation: fadeIn 0.5s; }
         .section.active { display: block; }
-
-        .card { 
-            background: var(--bg-card); 
-            padding: 30px; 
-            border-radius: 15px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
-            margin-bottom: 25px; 
-            border: 1px solid #2a2a4a;
-        }
+        .card { background: var(--bg-card); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-bottom: 25px; border: 1px solid #2a2a4a; }
         
-        /* === INPUTS Y SELECTS === */
         label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.9em; color: var(--txt-blue); }
-        
-        input, select { 
-            width: 100%; 
-            padding: 12px; 
-            margin-top: 8px; 
-            border: 1px solid #444; 
-            border-radius: 5px; 
-            background-color: #0f3460; 
-            color: white;
-            font-family: 'Arial', sans-serif;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--txt-yellow);
-        }
+        input, select { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #444; border-radius: 5px; background-color: #0f3460; color: white; font-family: 'Arial', sans-serif; }
+        input:focus, select:focus { outline: none; border-color: var(--txt-yellow); }
 
-        /* === BOTONES DE ACCIÓN === */
-        button.action-btn { 
-            margin-top: 25px; 
-            width: 100%; 
-            padding: 15px; 
-            background: var(--primary-purple); 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: bold; 
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
         
+        button.action-btn { margin-top: 25px; width: 100%; padding: 15px; background: var(--primary-purple); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         button.action-btn:hover { background: var(--hover-purple); }
-        
-        button.reset-btn { 
-            background: #b71c1c; 
-            margin-top: 15px; 
-            opacity: 0.8;
-        }
+        button.reset-btn { background: #b71c1c; margin-top: 15px; opacity: 0.8; }
         button.reset-btn:hover { background: #d32f2f; opacity: 1; }
-
-        /* === RESULTADOS Y TABLAS === */
-        .group-header { 
-            color: var(--txt-orange); 
-            margin-top: 20px; 
-            font-size: 0.9em; 
-            border-bottom: 1px dashed #555; 
-            padding-bottom: 5px;
-        }
-
-        .result-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 10px 0; 
-            border-bottom: 1px solid #333; 
-            font-size: 1em; 
-        }
-
+        .edit-btn { background: #007bff; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 10px; font-size: 0.8em; }
+        
+        
+        .group-header { color: var(--txt-orange); margin-top: 20px; font-size: 0.9em; border-bottom: 1px dashed #555; padding-bottom: 5px; }
+        .result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #333; font-size: 1em; }
         .result-row span:last-child { color: #fff; font-weight: normal; } 
-        
-        .total-section { 
-            font-weight: bold; 
-            background: rgba(255, 255, 255, 0.05); 
-            padding: 15px; 
-            border-radius: 5px;
-            margin-top: 5px;
-            color: var(--txt-blue);
-        }
-
-        .result-row.final { 
-            background: transparent; 
-            border: 2px solid var(--txt-yellow);
-            color: var(--txt-yellow); 
-            padding: 20px; 
-            font-size: 1.3em; 
-            margin-top: 20px; 
-            text-align: center;
-            justify-content: center;
-            gap: 20px;
-            border-radius: 10px;
-        }
-        
-        .subtitle { 
-            color: var(--txt-orange); 
-            margin-top: 30px; 
-            border-bottom: 2px solid var(--txt-orange); 
-            display: inline-block; 
-            padding-bottom: 5px;
-            font-size: 1.1em;
-        }
+        .total-section { font-weight: bold; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 5px; margin-top: 5px; color: var(--txt-blue); }
+        .result-row.final { background: transparent; border: 2px solid var(--txt-yellow); color: var(--txt-yellow); padding: 20px; font-size: 1.3em; margin-top: 20px; text-align: center; justify-content: center; border-radius: 10px; }
+        .subtitle { color: var(--txt-orange); margin-top: 30px; border-bottom: 2px solid var(--txt-orange); display: inline-block; padding-bottom: 5px; font-size: 1.1em; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <h1>Sistema Contable Empresarial</h1>
+    <h1>Sistema Contable</h1>
+
+    <div class="company-header">
+        <label style="margin-top:0; color: #aaa; font-size: 0.8em; margin-bottom: 5px;">Selecciona Empresa:</label>
+        <select id="selector_empresa" onchange="cambiarEmpresa()">
+            <option value="" disabled selected>-- Cargando empresas... --</option>
+        </select>
+        <input type="text" id="input_nueva_empresa" placeholder="Nombre nueva empresa..." onkeyup="actualizarVistaNueva()">
+    </div>
 
     <div class="nav">
         <button onclick="mostrarSeccion('balance')" id="btnBalance" class="active">Balance General</button>
@@ -189,19 +88,20 @@
     </div>
 
     <div id="balance" class="section active">
+        
         <div class="card">
-            <h3>Registrar Cuenta</h3>
+            <h3 id="formTitle">Registrar Cuenta</h3>
+            <input type="hidden" id="bg_id" value="">
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                 <div style="flex: 2;">
-                    <label>Nombre de la Cuenta</label>
-                    <input type="text" id="bg_nombre" placeholder="Ej: Bancos, Maquinaria...">
+                    <label>Nombre</label>
+                    <input type="text" id="bg_nombre" placeholder="Ej: Bancos...">
                 </div>
                 <div style="flex: 1;">
                     <label>Monto</label>
                     <input type="number" id="bg_monto" placeholder="0.00">
                 </div>
             </div>
-            
             <label>Clasificación</label>
             <select id="bg_tipo">
                 <optgroup label="ACTIVOS">
@@ -215,19 +115,25 @@
                     <option value="PASIVO_DIFERIDO">Pasivo Diferido</option>
                 </optgroup>
             </select>
-
-            <button class="action-btn" onclick="agregarCuentaBalance()">Agregar al Balance</button>
-            <button class="action-btn reset-btn" onclick="limpiarBalance()">Reiniciar Balance</button>
+            <button class="action-btn" id="btnAction" onclick="procesarCuenta()">Agregar</button>
+            <button class="action-btn reset-btn" onclick="limpiarFormulario()">Limpiar</button>
+            <button class="action-btn reset-btn" style="background:#550000" onclick="borrarTodoEmpresa()">Borrar Empresa</button>
         </div>
 
         <div class="card" id="balanceDisplay">
-            <h3>Reporte de Balance General</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>Balance: <span id="displayEmpresa" style="color:white"></span></h3>
+                <div class="pdf-controls">
+                    <button class="pdf-btn" onclick="generarPDF('reporte')">📄 PDF Reporte</button>
+                    <button class="pdf-btn" onclick="generarPDF('cuenta')">📖 PDF Cuenta</button>
+                </div>
+            </div>
             
-            <h4 style="color: var(--txt-blue); border-bottom: 1px solid var(--txt-blue); padding-bottom:5px;">ACTIVOS</h4>
+            <h4 style="color: var(--txt-blue); border-bottom: 1px solid var(--txt-blue);">ACTIVOS</h4>
             <div id="renderActivos"></div>
             <div class="result-row total-section">TOTAL ACTIVO: <span id="totalActivo">$0.00</span></div>
 
-            <h4 style="color: var(--txt-orange); border-bottom: 1px solid var(--txt-orange); padding-bottom:5px; margin-top:20px;">PASIVOS</h4>
+            <h4 style="color: var(--txt-orange); border-bottom: 1px solid var(--txt-orange); margin-top:20px;">PASIVOS</h4>
             <div id="renderPasivos"></div>
             <div class="result-row total-section" style="color: var(--txt-orange)">TOTAL PASIVO: <span id="totalPasivo">$0.00</span></div>
 
@@ -240,14 +146,12 @@
     <div id="resultados" class="section">
         <div class="card">
             <h3>Datos del Periodo</h3>
-            
             <strong class="subtitle">1. Ventas</strong>
             <label>Ventas Totales</label><input type="number" id="er_ventas" value="0">
             <div style="display:flex; gap:10px;">
                 <div style="flex:1"><label>Dev. s/Ventas</label><input type="number" id="er_dev_ventas" value="0"></div>
                 <div style="flex:1"><label>Desc. s/Ventas</label><input type="number" id="er_desc_ventas" value="0"></div>
             </div>
-
             <strong class="subtitle">2. Costos e Inventarios</strong>
             <label>Inventario Inicial</label><input type="number" id="er_inv_inicial" value="0">
             <div style="display:flex; gap:10px;">
@@ -259,8 +163,7 @@
                 <div style="flex:1"><label>Desc. s/Compras</label><input type="number" id="er_desc_compras" value="0"></div>
             </div>
             <label>Inventario Final</label><input type="number" id="er_inv_final" value="0">
-
-            <strong class="subtitle">3. Gastos Operativos y Financieros</strong>
+            <strong class="subtitle">3. Gastos</strong>
             <div style="display:flex; gap:10px;">
                 <div style="flex:1"><label>Gastos de Venta</label><input type="number" id="er_gastos_venta" value="0"></div>
                 <div style="flex:1"><label>Gastos de Admin</label><input type="number" id="er_gastos_admin" value="0"></div>
@@ -273,10 +176,8 @@
                 <div style="flex:1"><label>Otros Productos</label><input type="number" id="er_otros_prod" value="0"></div>
                 <div style="flex:1"><label>Otros Gastos</label><input type="number" id="er_otros_gastos" value="0"></div>
             </div>
-
             <button class="action-btn" onclick="calcularResultados()">Generar Reporte</button>
         </div>
-
         <div class="card" id="resultadoDisplay" style="display:none;">
             <h3 style="color: var(--txt-yellow)">Reporte Generado</h3>
             <div id="tablaResultados"></div>
@@ -285,8 +186,63 @@
 
     <script>
         const API_URL = "http://127.0.0.1:8000";
+        let globalData = null; 
 
-        // --- UI Tabs ---
+        // Formato con comas cada 3 dígitos
+        const money = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        });
+
+        // Jalar lista de empresas desde backend
+        async function cargarListaEmpresas() {
+            try {
+                const res = await fetch(`${API_URL}/empresas`);
+                const empresas = await res.json();
+                const selector = document.getElementById('selector_empresa');
+                selector.innerHTML = ""; 
+                
+                if (empresas.length === 0) {
+                    selector.innerHTML = `<option value="NUEVA">+ Crear Primera Empresa</option>`;
+                    cambiarEmpresa(); 
+                    return;
+                }
+                let html = `<option value="NUEVA" style="color: #00d4ff; font-weight: bold;">➕ AGREGAR NUEVA EMPRESA</option>`;
+                empresas.forEach(emp => { html += `<option value="${emp}">${emp}</option>`; });
+                selector.innerHTML = html;
+                if(empresas.length > 0) selector.selectedIndex = 1;
+                cambiarEmpresa(); 
+            } catch (e) { console.error("Error", e); }
+        }
+
+        function cambiarEmpresa() {
+            const selector = document.getElementById('selector_empresa');
+            const inputNueva = document.getElementById('input_nueva_empresa');
+            if (selector.value === "NUEVA") {
+                inputNueva.style.display = "block"; inputNueva.value = ""; inputNueva.focus();
+                document.getElementById('displayEmpresa').innerText = "Nueva Empresa";
+                globalData = null; 
+                document.getElementById('renderActivos').innerHTML = "";
+                document.getElementById('renderPasivos').innerHTML = "";
+                document.getElementById('totalActivo').innerText = "$0.00";
+                document.getElementById('totalPasivo').innerText = "$0.00";
+                document.getElementById('capitalContable').innerText = "$0.00";
+            } else {
+                inputNueva.style.display = "none";
+                cargarBalance();
+            }
+        }
+
+        function actualizarVistaNueva() {
+            document.getElementById('displayEmpresa').innerText = document.getElementById('input_nueva_empresa').value || "Nueva Empresa";
+        }
+
+        function getEmpresa() {
+            const sel = document.getElementById('selector_empresa');
+            return sel.value === "NUEVA" ? document.getElementById('input_nueva_empresa').value.trim() : sel.value;
+        }
+
         function mostrarSeccion(seccion) {
             document.querySelectorAll('.section').forEach(d => d.classList.remove('active'));
             document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
@@ -294,67 +250,212 @@
             document.getElementById(seccion === 'balance' ? 'btnBalance' : 'btnResultados').classList.add('active');
         }
 
-        // --- BALANCE GENERAL ---
-        async function agregarCuentaBalance() {
+        // Cambiar empresa en el selector
+        async function procesarCuenta() {
+            const empresa = getEmpresa();
+            if (!empresa) return alert("Define el nombre de la empresa");
+            const id = document.getElementById('bg_id').value;
             const nombre = document.getElementById('bg_nombre').value;
             const monto = parseFloat(document.getElementById('bg_monto').value) || 0;
             const tipo = document.getElementById('bg_tipo').value;
 
-            if(!nombre) return alert("Ingresa un nombre");
+            if(!nombre) return alert("Falta nombre");
 
-            await fetch(`${API_URL}/balance/agregar`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({nombre, monto, tipo})
-            });
-            
-            document.getElementById('bg_nombre').value = '';
-            document.getElementById('bg_monto').value = '';
-            document.getElementById('bg_nombre').focus();
+            if (id) {
+                await fetch(`${API_URL}/balance/editar/${id}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nombre, monto, tipo })
+                });
+            } else {
+                await fetch(`${API_URL}/balance/agregar`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ empresa, nombre, monto, tipo })
+                });
+                const selector = document.getElementById('selector_empresa');
+                if(selector.value === "NUEVA") {
+                    await cargarListaEmpresas();
+                    selector.value = empresa;
+                    cambiarEmpresa();
+                }
+            }
+            limpiarFormulario();
             cargarBalance();
+        }
+
+        function cargarEdicion(id, nombre, monto, tipo) {
+            document.getElementById('bg_id').value = id;
+            document.getElementById('bg_nombre').value = nombre;
+            document.getElementById('bg_monto').value = monto;
+            document.getElementById('bg_tipo').value = tipo;
+            document.getElementById('btnAction').innerText = "Actualizar";
+            document.getElementById('formTitle').innerText = "Editando: " + nombre;
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('bg_id').value = "";
+            document.getElementById('bg_nombre').value = "";
+            document.getElementById('bg_monto').value = "";
+            document.getElementById('btnAction').innerText = "Agregar";
+            document.getElementById('formTitle').innerText = "Registrar Cuenta";
         }
 
         function renderGroup(titulo, items) {
             if (items.length === 0) return "";
             let html = `<div class='group-header'>${titulo}</div>`;
             items.forEach(i => {
-                html += `<div class='result-row'><span>${i.nombre}</span><span>$${i.monto.toFixed(2)}</span></div>`;
+                html += `
+                <div class='result-row'>
+                    <div><button class="edit-btn" onclick="cargarEdicion(${i.id}, '${i.nombre}', ${i.monto}, '${i.tipo}')">✎</button> <span style="margin-left:8px">${i.nombre}</span></div>
+                    <span>${money.format(i.monto)}</span>
+                </div>`;
             });
             const subtotal = items.reduce((acc, curr) => acc + curr.monto, 0);
-            html += `<div class='result-row' style='color:#888; justify-content:flex-end; font-size:0.9em'>Subtotal: $${subtotal.toFixed(2)}</div>`;
+            html += `<div class='result-row' style='color:#888; justify-content:flex-end; font-size:0.9em'>Subtotal: ${money.format(subtotal)}</div>`;
             return html;
         }
 
         async function cargarBalance() {
-            const res = await fetch(`${API_URL}/balance/calcular`);
-            const data = await res.json();
+            const empresa = getEmpresa();
+            if(!empresa) return;
+            document.getElementById('displayEmpresa').innerText = empresa;
+            const res = await fetch(`${API_URL}/balance/calcular?empresa=${encodeURIComponent(empresa)}`);
+            globalData = await res.json(); 
 
-            let htmlAct = "";
-            htmlAct += renderGroup("Circulante", data.activo.circulante);
-            htmlAct += renderGroup("Fijo", data.activo.fijo);
-            htmlAct += renderGroup("Diferido", data.activo.diferido);
-            document.getElementById('renderActivos').innerHTML = htmlAct || "<div style='padding:10px; text-align:center; color:#555'>Sin activos</div>";
-            document.getElementById('totalActivo').innerText = `$${data.activo.total.toFixed(2)}`;
+            let htmlAct = renderGroup("Circulante", globalData.activo.circulante) + 
+                          renderGroup("Fijo", globalData.activo.fijo) + 
+                          renderGroup("Diferido", globalData.activo.diferido);
+            document.getElementById('renderActivos').innerHTML = htmlAct || "<div style='text-align:center;color:#555'>Vacío</div>";
+            document.getElementById('totalActivo').innerText = money.format(globalData.activo.total);
 
-            let htmlPas = "";
-            htmlPas += renderGroup("Circulante", data.pasivo.circulante);
-            htmlPas += renderGroup("Fijo", data.pasivo.fijo);
-            htmlPas += renderGroup("Diferido", data.pasivo.diferido);
-            document.getElementById('renderPasivos').innerHTML = htmlPas || "<div style='padding:10px; text-align:center; color:#555'>Sin pasivos</div>";
-            document.getElementById('totalPasivo').innerText = `$${data.pasivo.total.toFixed(2)}`;
-
-            document.getElementById('capitalContable').innerText = `$${data.capital_contable.toFixed(2)}`;
+            let htmlPas = renderGroup("Circulante", globalData.pasivo.circulante) + 
+                          renderGroup("Fijo", globalData.pasivo.fijo) + 
+                          renderGroup("Diferido", globalData.pasivo.diferido);
+            document.getElementById('renderPasivos').innerHTML = htmlPas || "<div style='text-align:center;color:#555'>Vacío</div>";
+            document.getElementById('totalPasivo').innerText = money.format(globalData.pasivo.total);
+            document.getElementById('capitalContable').innerText = money.format(globalData.capital_contable);
         }
         
-        async function limpiarBalance() {
-            if(confirm("¿Borrar balance?")) {
-                await fetch(`${API_URL}/balance/limpiar`, { method: 'DELETE' });
-                cargarBalance();
+        async function borrarTodoEmpresa() {
+            const empresa = getEmpresa();
+            if(!empresa) return;
+            if(confirm(`¿Eliminar ${empresa}?`)) {
+                await fetch(`${API_URL}/balance/borrar-todo?empresa=${encodeURIComponent(empresa)}`, { method: 'DELETE' });
+                await cargarListaEmpresas();
             }
         }
 
-        // --- ESTADO DE RESULTADOS ---
+        //Función para generar PDFs
+        function generarPDF(tipo) {
+            if (!globalData || !getEmpresa()) return alert("No hay datos para imprimir");
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const empresa = getEmpresa();
+            const fecha = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text(empresa, 105, 20, { align: "center" });
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Balance General al ${fecha}`, 105, 28, { align: "center" });
+            
+            // Helper interno para usar money.format en el PDF
+            const fmt = (num) => money.format(num);
+
+            const prepararGrupo = (titulo, items) => {
+                if (items.length === 0) return [];
+                const rows = items.map(i => [i.nombre, fmt(i.monto)]);
+                const total = items.reduce((a,b) => a + b.monto, 0);
+                rows.unshift([{content: titulo, colSpan: 2, styles: {fontStyle: 'bold', fillColor: [240, 240, 240]}}]);
+                rows.push([{content: `Total ${titulo}`, styles: {fontStyle: 'italic'}}, {content: fmt(total), styles: {fontStyle: 'italic'}}]);
+                return rows;
+            };
+
+            if (tipo === 'reporte') {
+                let body = [];
+                
+                body.push([{content: "ACTIVOS", colSpan: 2, styles: {halign: 'center', fillColor: [200, 230, 255], fontStyle: 'bold'}}]);
+                body = body.concat(prepararGrupo("Activo Circulante", globalData.activo.circulante));
+                body = body.concat(prepararGrupo("Activo Fijo", globalData.activo.fijo));
+                body = body.concat(prepararGrupo("Activo Diferido", globalData.activo.diferido));
+                body.push([{content: "TOTAL ACTIVO", styles: {fontStyle: 'bold'}}, {content: fmt(globalData.activo.total), styles: {fontStyle: 'bold'}}]);
+
+                body.push([{content: "PASIVOS", colSpan: 2, styles: {halign: 'center', fillColor: [255, 230, 230], fontStyle: 'bold'}}]);
+                body = body.concat(prepararGrupo("Pasivo Circulante", globalData.pasivo.circulante));
+                body = body.concat(prepararGrupo("Pasivo Fijo", globalData.pasivo.fijo));
+                body = body.concat(prepararGrupo("Pasivo Diferido", globalData.pasivo.diferido));
+                body.push([{content: "TOTAL PASIVO", styles: {fontStyle: 'bold'}}, {content: fmt(globalData.pasivo.total), styles: {fontStyle: 'bold'}}]);
+
+                body.push([{content: "CAPITAL CONTABLE", styles: {halign: 'right', fontStyle: 'bold', fontSize: 12}}, {content: fmt(globalData.capital_contable), styles: {fontStyle: 'bold', fontSize: 12}}]);
+
+                doc.autoTable({
+                    startY: 35,
+                    head: [['Concepto', 'Monto']],
+                    body: body,
+                    theme: 'grid',
+                    styles: { fontSize: 10, cellPadding: 1.5 },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+
+            } else {
+                let bodyAct = [];
+                bodyAct = bodyAct.concat(prepararGrupo("Circulante", globalData.activo.circulante));
+                bodyAct = bodyAct.concat(prepararGrupo("Fijo", globalData.activo.fijo));
+                bodyAct = bodyAct.concat(prepararGrupo("Diferido", globalData.activo.diferido));
+                
+                doc.text("ACTIVOS", 14, 40);
+                doc.autoTable({
+                    startY: 42,
+                    margin: { right: 110 }, 
+                    head: [['Concepto', 'Monto']],
+                    body: bodyAct,
+                    theme: 'plain',
+                    styles: { fontSize: 8 },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+                const finalYActivo = doc.lastAutoTable.finalY + 5;
+                doc.text(`Total Activo: ${fmt(globalData.activo.total)}`, 14, finalYActivo);
+
+                let bodyPas = [];
+                bodyPas = bodyPas.concat(prepararGrupo("Circulante", globalData.pasivo.circulante));
+                bodyPas = bodyPas.concat(prepararGrupo("Fijo", globalData.pasivo.fijo));
+                bodyPas = bodyPas.concat(prepararGrupo("Diferido", globalData.pasivo.diferido));
+                
+                doc.text("PASIVOS Y CAPITAL", 115, 40);
+                doc.autoTable({
+                    startY: 42,
+                    margin: { left: 115 },
+                    head: [['Concepto', 'Monto']],
+                    body: bodyPas,
+                    theme: 'plain',
+                    styles: { fontSize: 8 },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+                
+                let finalYPasivo = doc.lastAutoTable.finalY + 5;
+                doc.text(`Total Pasivo: ${fmt(globalData.pasivo.total)}`, 115, finalYPasivo);
+                finalYPasivo += 10;
+                doc.text(`Capital Contable: ${fmt(globalData.capital_contable)}`, 115, finalYPasivo);
+                doc.setDrawColor(200);
+                doc.line(105, 35, 105, Math.max(finalYActivo, finalYPasivo) + 10);
+            }
+
+            doc.setFontSize(8);
+            //doc.text("Documento generado electrónicamente", 105, 290, {align: "center"});
+            doc.save(`Balance_${empresa}_${tipo}.pdf`);
+        }
+
+        // Calcular resultados en front
         async function calcularResultados() {
-            const payload = {};
+            const empresa = getEmpresa();
+            if (!empresa) return alert("Selecciona empresa");
+            const payload = { empresa };
+            const ids = ['er_ventas', 'er_dev_ventas', 'er_desc_ventas', 'er_inv_inicial', 'er_compras', 'er_gastos_compra', 'er_dev_compras', 'er_desc_compras', 'er_inv_final', 'er_gastos_venta', 'er_gastos_admin', 'er_prod_fin', 'er_gastos_fin', 'er_otros_gastos', 'er_otros_prod'];
+            ids.forEach(id => {
+                let key = id.replace("er_", ""); 
+                if(key === "ventas") key = "ventas_totales"; 
+            });
             
             payload.ventas_totales = parseFloat(document.getElementById('er_ventas').value) || 0;
             payload.dev_ventas = parseFloat(document.getElementById('er_dev_ventas').value) || 0;
@@ -377,29 +478,20 @@
                 body: JSON.stringify(payload)
             });
             const d = await res.json();
+            
 
             const html = `
-                <div class='result-row'><span>Ventas Netas:</span> <strong style="color:var(--txt-blue)">$${d.ventas_netas.toFixed(2)}</strong></div>
-                <div class='result-row'><span>- Costo vendido:</span> <span>$${d.costo_vendido.toFixed(2)}</span></div>
-                <div class='result-row total-section'>= Utilidad Bruta: <span style="color:white">$${d.utilidad_bruta.toFixed(2)}</span></div>
-                <br>
-                <div class='result-row'><span>Utilidad Operación:</span> <span>$${d.utilidad_operacion.toFixed(2)}</span></div>
-                <div class='result-row'><span>R. Financiero:</span> <span>$${d.financiero_neto.toFixed(2)}</span></div>
-                <div class='result-row'><span>Otros:</span> <span>$${d.otros_neto.toFixed(2)}</span></div>
-                <br>
-                <div class='result-row'><span>Utilidad Antes Imp:</span> <strong style="color:var(--txt-blue)">$${d.utilidad_antes_impuestos.toFixed(2)}</strong></div>
-                <div class='result-row'><span>- ISR (33%):</span> <span style="color:#ff6b6b">$${d.isr.toFixed(2)}</span></div>
-                <div class='result-row'><span>- PTU (10%):</span> <span style="color:#ff6b6b">$${d.ptu.toFixed(2)}</span></div>
-                <div class='result-row final'>
-                    UTILIDAD NETA: <span>$${d.utilidad_neta.toFixed(2)}</span>
-                </div>
+                <div class='result-row'><span>Ventas Netas:</span> <strong style="color:var(--txt-blue)">${money.format(d.ventas_netas)}</strong></div>
+                <div class='result-row'><span>- Costo vendido:</span> <span>${money.format(d.costo_vendido)}</span></div>
+                <div class='result-row total-section'>= Utilidad Bruta: <span style="color:white">${money.format(d.utilidad_bruta)}</span></div>
+                <div class='result-row'><span>Utilidad Operación:</span> <span>${money.format(d.utilidad_operacion)}</span></div>
+                <div class='result-row final'>UTILIDAD NETA: <span>${money.format(d.utilidad_neta)}</span></div>
             `;
-            
             document.getElementById('tablaResultados').innerHTML = html;
             document.getElementById('resultadoDisplay').style.display = 'block';
         }
 
-        cargarBalance();
+        cargarListaEmpresas();
     </script>
 </body>
 </html>

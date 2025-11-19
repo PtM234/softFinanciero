@@ -2,6 +2,7 @@ import sqlite3
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
 
 app = FastAPI()
 
@@ -13,29 +14,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_NAME = "contabilidad_v2.db"
+DB_NAME = "contabilidad_v3.db"  # Nombre nuevo para evitar conflictos
 
 
-# --- 1. Configuración de BD ---
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # Actualizamos la tabla para soportar tipos específicos
-    # Nota: Si ya tienes la BD creada, sqlite es flexible con los tipos de texto,
-    # pero se recomienda borrar el archivo .db para empezar limpio con la nueva lógica.
+    # Agregamos columna 'empresa'
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS cuentas_balance (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        empresa TEXT NOT NULL,
         nombre TEXT NOT NULL,
         monto REAL NOT NULL,
-        tipo TEXT NOT NULL -- Ej: 'ACTIVO_CIRCULANTE', 'PASIVO_FIJO', etc.
+        tipo TEXT NOT NULL
     )
     ''')
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS historial_resultados (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        empresa TEXT NOT NULL,
         fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         utilidad_neta REAL
     )
@@ -48,15 +48,23 @@ def init_db():
 init_db()
 
 
-# --- 2. Modelos ---
+# --- Modelos ---
 
 class CuentaBalance(BaseModel):
+    empresa: str
     nombre: str
     monto: float
-    tipo: str  # Ahora recibirá strings específicos como 'ACTIVO_CIRCULANTE'
+    tipo: str
+
+
+class CuentaBalanceUpdate(BaseModel):
+    nombre: str
+    monto: float
+    tipo: str
 
 
 class DatosEstadoResultados(BaseModel):
+    empresa: str
     ventas_totales: float
     dev_ventas: float
     desc_ventas: float
@@ -74,54 +82,31 @@ class DatosEstadoResultados(BaseModel):
     otros_productos: float
 
 
-# --- 3. Endpoints ---
+# --- Endpoints ---
 
-# === A. BALANCE GENERAL DETALLADO ===
-@app.post("/balance/agregar")
-def agregar_cuenta_balance(cuenta: CuentaBalance):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO cuentas_balance (nombre, monto, tipo) VALUES (?, ?, ?)",
-                   (cuenta.nombre, cuenta.monto, cuenta.tipo))
-    conn.commit()
-    conn.close()
-    return {"msg": "Cuenta agregada"}
-
+# === BALANCE GENERAL ===
 
 @app.get("/balance/calcular")
-def obtener_balance():
+def obtener_balance(empresa: str):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM cuentas_balance")
+    # Filtramos por empresa
+    cursor.execute("SELECT * FROM cuentas_balance WHERE empresa = ?", (empresa,))
     filas = cursor.fetchall()
     conn.close()
 
-    # Estructura para clasificar
     balance = {
-        "activo": {
-            "circulante": [],
-            "fijo": [],
-            "diferido": [],
-            "total": 0.0
-        },
-        "pasivo": {
-            "circulante": [],
-            "fijo": [],
-            "diferido": [],
-            "total": 0.0
-        },
+        "activo": {"circulante": [], "fijo": [], "diferido": [], "total": 0.0},
+        "pasivo": {"circulante": [], "fijo": [], "diferido": [], "total": 0.0},
         "capital_contable": 0.0
     }
 
     for f in filas:
-        # f = (id, nombre, monto, tipo)
-        nombre = f[1]
-        monto = f[2]
-        tipo = f[3]  # Ej: "ACTIVO_CIRCULANTE"
+        # f = (id, empresa, nombre, monto, tipo)
+        item = {"id": f[0], "nombre": f[2], "monto": f[3], "tipo": f[4]}  # Enviamos ID para poder editar
+        monto = f[3]
+        tipo = f[4]
 
-        item = {"nombre": nombre, "monto": monto}
-
-        # Lógica de clasificación
         if tipo.startswith("ACTIVO"):
             balance["activo"]["total"] += monto
             if "CIRCULANTE" in tipo:
@@ -141,23 +126,45 @@ def obtener_balance():
                 balance["pasivo"]["diferido"].append(item)
 
     balance["capital_contable"] = balance["activo"]["total"] - balance["pasivo"]["total"]
-
     return balance
 
 
-@app.delete("/balance/limpiar")
-def limpiar_balance():
+@app.post("/balance/agregar")
+def agregar_cuenta(cuenta: CuentaBalance):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM cuentas_balance")
+    cursor.execute("INSERT INTO cuentas_balance (empresa, nombre, monto, tipo) VALUES (?, ?, ?, ?)",
+                   (cuenta.empresa, cuenta.nombre, cuenta.monto, cuenta.tipo))
     conn.commit()
     conn.close()
-    return {"msg": "Balance reiniciado"}
+    return {"msg": "Agregado"}
 
 
-# === B. ESTADO DE RESULTADOS (Igual que antes) ===
+@app.put("/balance/editar/{id_cuenta}")
+def editar_cuenta(id_cuenta: int, cuenta: CuentaBalanceUpdate):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE cuentas_balance SET nombre=?, monto=?, tipo=? WHERE id=?",
+                   (cuenta.nombre, cuenta.monto, cuenta.tipo, id_cuenta))
+    conn.commit()
+    conn.close()
+    return {"msg": "Actualizado"}
+
+
+@app.delete("/balance/borrar-todo")
+def limpiar_balance(empresa: str):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM cuentas_balance WHERE empresa = ?", (empresa,))
+    conn.commit()
+    conn.close()
+    return {"msg": "Balance reiniciado para la empresa"}
+
+
+# === ESTADO DE RESULTADOS ===
 @app.post("/resultados/calcular")
-def calcular_estado_resultados(d: DatosEstadoResultados):
+def calcular_resultados(d: DatosEstadoResultados):
+    # Lógica idéntica, solo guardamos la empresa en el historial
     ventas_netas = d.ventas_totales - (d.dev_ventas + d.desc_ventas)
     compras_totales = d.compras + d.gastos_compra
     compras_netas = compras_totales - (d.dev_compras + d.desc_compras)
@@ -175,7 +182,8 @@ def calcular_estado_resultados(d: DatosEstadoResultados):
     utilidad_neta = utilidad_antes_impuestos - (isr + ptu)
 
     conn = sqlite3.connect(DB_NAME)
-    conn.cursor().execute("INSERT INTO historial_resultados (utilidad_neta) VALUES (?)", (utilidad_neta,))
+    conn.cursor().execute("INSERT INTO historial_resultados (empresa, utilidad_neta) VALUES (?, ?)",
+                          (d.empresa, utilidad_neta))
     conn.commit()
     conn.close()
 
@@ -194,3 +202,26 @@ def calcular_estado_resultados(d: DatosEstadoResultados):
         "ptu": ptu,
         "utilidad_neta": utilidad_neta
     }
+
+
+# ... (resto del código anterior) ...
+
+@app.get("/empresas")
+def listar_empresas():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    # Buscamos empresas únicas tanto en balances como en resultados
+    # Usamos UNION para combinar ambas tablas y DISTINCT para quitar duplicados
+    cursor.execute('''
+        SELECT DISTINCT empresa FROM cuentas_balance
+        UNION
+        SELECT DISTINCT empresa FROM historial_resultados
+    ''')
+
+    filas = cursor.fetchall()
+    conn.close()
+
+    # Devolvemos una lista simple de strings: ["Empresa A", "Empresa B"]
+    lista_empresas = [f[0] for f in filas if f[0]]
+    return lista_empresas
