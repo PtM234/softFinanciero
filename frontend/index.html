@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema Financiero</title>
+    <style>
+        /* === ELIMINAR FLECHAS/BOTONES DE LOS INPUTS NUMBER === */
+        /* Para Chrome, Safari, Edge, Opera */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Para Firefox */
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* === CONFIGURACIÓN GENERAL Y COLORES === */
+        :root {
+            --bg-body: #1a1a2e;       
+            --bg-card: #16213e;       
+            --primary-purple: #8a2be2; 
+            --hover-purple: #6a1b9a;   
+            --text-main: #e0e0e0;     
+            
+            --txt-blue: #00d4ff;      
+            --txt-yellow: #ffd700;    
+            --txt-orange: #ff8c00;    
+        }
+
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main);
+            padding: 20px; 
+            max-width: 950px; 
+            margin: auto; 
+        }
+
+        h1 { 
+            text-align: center; 
+            color: var(--txt-blue); 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        h3 { color: var(--txt-orange); border-bottom: 1px solid #444; padding-bottom: 10px; }
+        
+        /* === NAVEGACIÓN === */
+        .nav { display: flex; gap: 15px; margin-bottom: 30px; justify-content: center; }
+        
+        .nav button { 
+            padding: 12px 30px; 
+            cursor: pointer; 
+            border: 2px solid var(--primary-purple); 
+            background: transparent; 
+            color: white;
+            font-size: 16px; 
+            border-radius: 25px; 
+            transition: 0.3s; 
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+        }
+
+        .nav button.active, .nav button:hover { 
+            background: var(--primary-purple); 
+            color: white; 
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5); 
+        }
+
+        /* === TARJETAS Y LAYOUT === */
+        .section { display: none; animation: fadeIn 0.5s; }
+        .section.active { display: block; }
+
+        .card { 
+            background: var(--bg-card); 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            margin-bottom: 25px; 
+            border: 1px solid #2a2a4a;
+        }
+        
+        /* === INPUTS Y SELECTS === */
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.9em; color: var(--txt-blue); }
+        
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 8px; 
+            border: 1px solid #444; 
+            border-radius: 5px; 
+            background-color: #0f3460; 
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--txt-yellow);
+        }
+
+        /* === BOTONES DE ACCIÓN === */
+        button.action-btn { 
+            margin-top: 25px; 
+            width: 100%; 
+            padding: 15px; 
+            background: var(--primary-purple); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button.action-btn:hover { background: var(--hover-purple); }
+        
+        button.reset-btn { 
+            background: #b71c1c; 
+            margin-top: 15px; 
+            opacity: 0.8;
+        }
+        button.reset-btn:hover { background: #d32f2f; opacity: 1; }
+
+        /* === RESULTADOS Y TABLAS === */
+        .group-header { 
+            color: var(--txt-orange); 
+            margin-top: 20px; 
+            font-size: 0.9em; 
+            border-bottom: 1px dashed #555; 
+            padding-bottom: 5px;
+        }
+
+        .result-row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px 0; 
+            border-bottom: 1px solid #333; 
+            font-size: 1em; 
+        }
+
+        .result-row span:last-child { color: #fff; font-weight: normal; } 
+        
+        .total-section { 
+            font-weight: bold; 
+            background: rgba(255, 255, 255, 0.05); 
+            padding: 15px; 
+            border-radius: 5px;
+            margin-top: 5px;
+            color: var(--txt-blue);
+        }
+
+        .result-row.final { 
+            background: transparent; 
+            border: 2px solid var(--txt-yellow);
+            color: var(--txt-yellow); 
+            padding: 20px; 
+            font-size: 1.3em; 
+            margin-top: 20px; 
+            text-align: center;
+            justify-content: center;
+            gap: 20px;
+            border-radius: 10px;
+        }
+        
+        .subtitle { 
+            color: var(--txt-orange); 
+            margin-top: 30px; 
+            border-bottom: 2px solid var(--txt-orange); 
+            display: inline-block; 
+            padding-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <h1>Sistema Contable Empresarial</h1>
+
+    <div class="nav">
+        <button onclick="mostrarSeccion('balance')" id="btnBalance" class="active">Balance General</button>
+        <button onclick="mostrarSeccion('resultados')" id="btnResultados">Estado de Resultados</button>
+    </div>
+
+    <div id="balance" class="section active">
+        <div class="card">
+            <h3>Registrar Cuenta</h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div style="flex: 2;">
+                    <label>Nombre de la Cuenta</label>
+                    <input type="text" id="bg_nombre" placeholder="Ej: Bancos, Maquinaria...">
+                </div>
+                <div style="flex: 1;">
+                    <label>Monto</label>
+                    <input type="number" id="bg_monto" placeholder="0.00">
+                </div>
+            </div>
+            
+            <label>Clasificación</label>
+            <select id="bg_tipo">
+                <optgroup label="ACTIVOS">
+                    <option value="ACTIVO_CIRCULANTE">Activo Circulante</option>
+                    <option value="ACTIVO_FIJO">Activo Fijo</option>
+                    <option value="ACTIVO_DIFERIDO">Activo Diferido</option>
+                </optgroup>
+                <optgroup label="PASIVOS">
+                    <option value="PASIVO_CIRCULANTE">Pasivo Circulante</option>
+                    <option value="PASIVO_FIJO">Pasivo Fijo</option>
+                    <option value="PASIVO_DIFERIDO">Pasivo Diferido</option>
+                </optgroup>
+            </select>
+
+            <button class="action-btn" onclick="agregarCuentaBalance()">Agregar al Balance</button>
+            <button class="action-btn reset-btn" onclick="limpiarBalance()">Reiniciar Balance</button>
+        </div>
+
+        <div class="card" id="balanceDisplay">
+            <h3>Reporte de Balance General</h3>
+            
+            <h4 style="color: var(--txt-blue); border-bottom: 1px solid var(--txt-blue); padding-bottom:5px;">ACTIVOS</h4>
+            <div id="renderActivos"></div>
+            <div class="result-row total-section">TOTAL ACTIVO: <span id="totalActivo">$0.00</span></div>
+
+            <h4 style="color: var(--txt-orange); border-bottom: 1px solid var(--txt-orange); padding-bottom:5px; margin-top:20px;">PASIVOS</h4>
+            <div id="renderPasivos"></div>
+            <div class="result-row total-section" style="color: var(--txt-orange)">TOTAL PASIVO: <span id="totalPasivo">$0.00</span></div>
+
+            <div class="result-row final">
+                CAPITAL CONTABLE: <span id="capitalContable">$0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultados" class="section">
+        <div class="card">
+            <h3>Datos del Periodo</h3>
+            
+            <strong class="subtitle">1. Ventas</strong>
+            <label>Ventas Totales</label><input type="number" id="er_ventas" value="0">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Dev. s/Ventas</label><input type="number" id="er_dev_ventas" value="0"></div>
+                <div style="flex:1"><label>Desc. s/Ventas</label><input type="number" id="er_desc_ventas" value="0"></div>
+            </div>
+
+            <strong class="subtitle">2. Costos e Inventarios</strong>
+            <label>Inventario Inicial</label><input type="number" id="er_inv_inicial" value="0">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Compras</label><input type="number" id="er_compras" value="0"></div>
+                <div style="flex:1"><label>Gastos de Compra</label><input type="number" id="er_gastos_compra" value="0"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Dev. s/Compras</label><input type="number" id="er_dev_compras" value="0"></div>
+                <div style="flex:1"><label>Desc. s/Compras</label><input type="number" id="er_desc_compras" value="0"></div>
+            </div>
+            <label>Inventario Final</label><input type="number" id="er_inv_final" value="0">
+
+            <strong class="subtitle">3. Gastos Operativos y Financieros</strong>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Gastos de Venta</label><input type="number" id="er_gastos_venta" value="0"></div>
+                <div style="flex:1"><label>Gastos de Admin</label><input type="number" id="er_gastos_admin" value="0"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Prod. Financieros</label><input type="number" id="er_prod_fin" value="0"></div>
+                <div style="flex:1"><label>Gastos Financieros</label><input type="number" id="er_gastos_fin" value="0"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Otros Productos</label><input type="number" id="er_otros_prod" value="0"></div>
+                <div style="flex:1"><label>Otros Gastos</label><input type="number" id="er_otros_gastos" value="0"></div>
+            </div>
+
+            <button class="action-btn" onclick="calcularResultados()">Generar Reporte</button>
+        </div>
+
+        <div class="card" id="resultadoDisplay" style="display:none;">
+            <h3 style="color: var(--txt-yellow)">Reporte Generado</h3>
+            <div id="tablaResultados"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        // --- UI Tabs ---
+        function mostrarSeccion(seccion) {
+            document.querySelectorAll('.section').forEach(d => d.classList.remove('active'));
+            document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(seccion).classList.add('active');
+            document.getElementById(seccion === 'balance' ? 'btnBalance' : 'btnResultados').classList.add('active');
+        }
+
+        // --- BALANCE GENERAL ---
+        async function agregarCuentaBalance() {
+            const nombre = document.getElementById('bg_nombre').value;
+            const monto = parseFloat(document.getElementById('bg_monto').value) || 0;
+            const tipo = document.getElementById('bg_tipo').value;
+
+            if(!nombre) return alert("Ingresa un nombre");
+
+            await fetch(`${API_URL}/balance/agregar`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({nombre, monto, tipo})
+            });
+            
+            document.getElementById('bg_nombre').value = '';
+            document.getElementById('bg_monto').value = '';
+            document.getElementById('bg_nombre').focus();
+            cargarBalance();
+        }
+
+        function renderGroup(titulo, items) {
+            if (items.length === 0) return "";
+            let html = `<div class='group-header'>${titulo}</div>`;
+            items.forEach(i => {
+                html += `<div class='result-row'><span>${i.nombre}</span><span>$${i.monto.toFixed(2)}</span></div>`;
+            });
+            const subtotal = items.reduce((acc, curr) => acc + curr.monto, 0);
+            html += `<div class='result-row' style='color:#888; justify-content:flex-end; font-size:0.9em'>Subtotal: $${subtotal.toFixed(2)}</div>`;
+            return html;
+        }
+
+        async function cargarBalance() {
+            const res = await fetch(`${API_URL}/balance/calcular`);
+            const data = await res.json();
+
+            let htmlAct = "";
+            htmlAct += renderGroup("Circulante", data.activo.circulante);
+            htmlAct += renderGroup("Fijo", data.activo.fijo);
+            htmlAct += renderGroup("Diferido", data.activo.diferido);
+            document.getElementById('renderActivos').innerHTML = htmlAct || "<div style='padding:10px; text-align:center; color:#555'>Sin activos</div>";
+            document.getElementById('totalActivo').innerText = `$${data.activo.total.toFixed(2)}`;
+
+            let htmlPas = "";
+            htmlPas += renderGroup("Circulante", data.pasivo.circulante);
+            htmlPas += renderGroup("Fijo", data.pasivo.fijo);
+            htmlPas += renderGroup("Diferido", data.pasivo.diferido);
+            document.getElementById('renderPasivos').innerHTML = htmlPas || "<div style='padding:10px; text-align:center; color:#555'>Sin pasivos</div>";
+            document.getElementById('totalPasivo').innerText = `$${data.pasivo.total.toFixed(2)}`;
+
+            document.getElementById('capitalContable').innerText = `$${data.capital_contable.toFixed(2)}`;
+        }
+        
+        async function limpiarBalance() {
+            if(confirm("¿Borrar balance?")) {
+                await fetch(`${API_URL}/balance/limpiar`, { method: 'DELETE' });
+                cargarBalance();
+            }
+        }
+
+        // --- ESTADO DE RESULTADOS ---
+        async function calcularResultados() {
+            const payload = {};
+            
+            payload.ventas_totales = parseFloat(document.getElementById('er_ventas').value) || 0;
+            payload.dev_ventas = parseFloat(document.getElementById('er_dev_ventas').value) || 0;
+            payload.desc_ventas = parseFloat(document.getElementById('er_desc_ventas').value) || 0;
+            payload.inventario_inicial = parseFloat(document.getElementById('er_inv_inicial').value) || 0;
+            payload.compras = parseFloat(document.getElementById('er_compras').value) || 0;
+            payload.gastos_compra = parseFloat(document.getElementById('er_gastos_compra').value) || 0;
+            payload.dev_compras = parseFloat(document.getElementById('er_dev_compras').value) || 0;
+            payload.desc_compras = parseFloat(document.getElementById('er_desc_compras').value) || 0;
+            payload.inventario_final = parseFloat(document.getElementById('er_inv_final').value) || 0;
+            payload.gastos_venta = parseFloat(document.getElementById('er_gastos_venta').value) || 0;
+            payload.gastos_admin = parseFloat(document.getElementById('er_gastos_admin').value) || 0;
+            payload.productos_financieros = parseFloat(document.getElementById('er_prod_fin').value) || 0;
+            payload.gastos_financieros = parseFloat(document.getElementById('er_gastos_fin').value) || 0;
+            payload.otros_gastos = parseFloat(document.getElementById('er_otros_gastos').value) || 0;
+            payload.otros_productos = parseFloat(document.getElementById('er_otros_prod').value) || 0;
+
+            const res = await fetch(`${API_URL}/resultados/calcular`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const d = await res.json();
+
+            const html = `
+                <div class='result-row'><span>Ventas Netas:</span> <strong style="color:var(--txt-blue)">$${d.ventas_netas.toFixed(2)}</strong></div>
+                <div class='result-row'><span>- Costo vendido:</span> <span>$${d.costo_vendido.toFixed(2)}</span></div>
+                <div class='result-row total-section'>= Utilidad Bruta: <span style="color:white">$${d.utilidad_bruta.toFixed(2)}</span></div>
+                <br>
+                <div class='result-row'><span>Utilidad Operación:</span> <span>$${d.utilidad_operacion.toFixed(2)}</span></div>
+                <div class='result-row'><span>R. Financiero:</span> <span>$${d.financiero_neto.toFixed(2)}</span></div>
+                <div class='result-row'><span>Otros:</span> <span>$${d.otros_neto.toFixed(2)}</span></div>
+                <br>
+                <div class='result-row'><span>Utilidad Antes Imp:</span> <strong style="color:var(--txt-blue)">$${d.utilidad_antes_impuestos.toFixed(2)}</strong></div>
+                <div class='result-row'><span>- ISR (33%):</span> <span style="color:#ff6b6b">$${d.isr.toFixed(2)}</span></div>
+                <div class='result-row'><span>- PTU (10%):</span> <span style="color:#ff6b6b">$${d.ptu.toFixed(2)}</span></div>
+                <div class='result-row final'>
+                    UTILIDAD NETA: <span>$${d.utilidad_neta.toFixed(2)}</span>
+                </div>
+            `;
+            
+            document.getElementById('tablaResultados').innerHTML = html;
+            document.getElementById('resultadoDisplay').style.display = 'block';
+        }
+
+        cargarBalance();
+    </script>
+</body>
+</html>
