@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema Multi-Empresa</title>
+    <title>Sistema Financiero</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
@@ -58,6 +58,8 @@
         button.reset-btn { background: #b71c1c; margin-top: 15px; opacity: 0.8; }
         button.reset-btn:hover { background: #d32f2f; opacity: 1; }
         .edit-btn { background: #007bff; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 10px; font-size: 0.8em; }
+        .delete-btn { background: #dc3545; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; font-size: 0.8em; }
+        .delete-btn:hover { background: #a71d2a; }
         
         
         .group-header { color: var(--txt-orange); margin-top: 20px; font-size: 0.9em; border-bottom: 1px dashed #555; padding-bottom: 5px; }
@@ -72,7 +74,7 @@
 </head>
 <body>
 
-    <h1>Sistema Contable</h1>
+    <h1>Sistema Financiero</h1>
 
     <div class="company-header">
         <label style="margin-top:0; color: #aaa; font-size: 0.8em; margin-bottom: 5px;">Selecciona Empresa:</label>
@@ -95,7 +97,7 @@
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                 <div style="flex: 2;">
                     <label>Nombre</label>
-                    <input type="text" id="bg_nombre" placeholder="Ej: Bancos...">
+                    <input type="text" id="bg_nombre" placeholder="Ingresa el nombre de la cuenta">
                 </div>
                 <div style="flex: 1;">
                     <label>Monto</label>
@@ -188,14 +190,14 @@
         const API_URL = "http://127.0.0.1:8000";
         let globalData = null; 
 
-        // Formato con comas cada 3 dígitos
+        // Formato para las cifras
         const money = new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 2
         });
 
-        // Jalar lista de empresas desde backend
+        // Recuperar empresas desde el back
         async function cargarListaEmpresas() {
             try {
                 const res = await fetch(`${API_URL}/empresas`);
@@ -250,7 +252,7 @@
             document.getElementById(seccion === 'balance' ? 'btnBalance' : 'btnResultados').classList.add('active');
         }
 
-        // Cambiar empresa en el selector
+        // --- LÓGICA BALANCE ---
         async function procesarCuenta() {
             const empresa = getEmpresa();
             if (!empresa) return alert("Define el nombre de la empresa");
@@ -305,7 +307,13 @@
             items.forEach(i => {
                 html += `
                 <div class='result-row'>
-                    <div><button class="edit-btn" onclick="cargarEdicion(${i.id}, '${i.nombre}', ${i.monto}, '${i.tipo}')">✎</button> <span style="margin-left:8px">${i.nombre}</span></div>
+                    <div style="display:flex; align-items:center;">
+                        <button class="edit-btn" onclick="cargarEdicion(${i.id}, '${i.nombre}', ${i.monto}, '${i.tipo}')">✎</button>
+                        
+                        <button class="delete-btn" onclick="borrarCuentaIndividual(${i.id}, '${i.nombre}')">🗑️</button>
+                        
+                        <span style="margin-left:10px">${i.nombre}</span>
+                    </div>
                     <span>${money.format(i.monto)}</span>
                 </div>`;
             });
@@ -344,7 +352,26 @@
             }
         }
 
-        //Función para generar PDFs
+        async function borrarCuentaIndividual(id, nombre) {
+            if(!confirm(`¿Eliminar la cuenta "${nombre}"?`)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/balance/borrar-cuenta/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    cargarBalance();
+                } else {
+                    alert("Error al eliminar la cuenta");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión");
+            }
+        }
+
+        // jsPDF para generación del reporte en formato PDF
         function generarPDF(tipo) {
             if (!globalData || !getEmpresa()) return alert("No hay datos para imprimir");
 
@@ -360,9 +387,9 @@
             doc.setFont("helvetica", "normal");
             doc.text(`Balance General al ${fecha}`, 105, 28, { align: "center" });
             
-            // Helper interno para usar money.format en el PDF
             const fmt = (num) => money.format(num);
 
+            // Formato de resultados
             const prepararGrupo = (titulo, items) => {
                 if (items.length === 0) return [];
                 const rows = items.map(i => [i.nombre, fmt(i.monto)]);
@@ -372,16 +399,30 @@
                 return rows;
             };
 
+            // ESTILOS: Definimos la fila verde de cabecera (Concepto | Monto)
+            const subHeaderRow = [
+                {content: 'Concepto', styles: {fillColor: [26, 188, 156], textColor: 255, fontStyle: 'bold', halign: 'left'}}, 
+                {content: 'Monto', styles: {fillColor: [26, 188, 156], textColor: 255, fontStyle: 'bold', halign: 'right'}}
+            ];
+
             if (tipo === 'reporte') {
                 let body = [];
                 
+                // 1. Título ACTIVOS
                 body.push([{content: "ACTIVOS", colSpan: 2, styles: {halign: 'center', fillColor: [200, 230, 255], fontStyle: 'bold'}}]);
+                // 2. Fila Verde (Concepto | Monto) - ¡Aquí es donde pediste el cambio!
+                body.push(subHeaderRow);
+
                 body = body.concat(prepararGrupo("Activo Circulante", globalData.activo.circulante));
                 body = body.concat(prepararGrupo("Activo Fijo", globalData.activo.fijo));
                 body = body.concat(prepararGrupo("Activo Diferido", globalData.activo.diferido));
                 body.push([{content: "TOTAL ACTIVO", styles: {fontStyle: 'bold'}}, {content: fmt(globalData.activo.total), styles: {fontStyle: 'bold'}}]);
 
+                // 1. Título PASIVOS
                 body.push([{content: "PASIVOS", colSpan: 2, styles: {halign: 'center', fillColor: [255, 230, 230], fontStyle: 'bold'}}]);
+                // 2. Fila Verde (Concepto | Monto) de nuevo para Pasivos
+                body.push(subHeaderRow);
+
                 body = body.concat(prepararGrupo("Pasivo Circulante", globalData.pasivo.circulante));
                 body = body.concat(prepararGrupo("Pasivo Fijo", globalData.pasivo.fijo));
                 body = body.concat(prepararGrupo("Pasivo Diferido", globalData.pasivo.diferido));
@@ -391,7 +432,7 @@
 
                 doc.autoTable({
                     startY: 35,
-                    head: [['Concepto', 'Monto']],
+                    // head: [['Concepto', 'Monto']], // <--- ELIMINAMOS ESTO para que no salga arriba
                     body: body,
                     theme: 'grid',
                     styles: { fontSize: 10, cellPadding: 1.5 },
@@ -399,6 +440,8 @@
                 });
 
             } else {
+                // Lógica para formato cuenta (Horizontal) - Mantenemos cabeceras normales aquí para no romper el diseño de dos columnas
+                
                 let bodyAct = [];
                 bodyAct = bodyAct.concat(prepararGrupo("Circulante", globalData.activo.circulante));
                 bodyAct = bodyAct.concat(prepararGrupo("Fijo", globalData.activo.fijo));
@@ -408,7 +451,7 @@
                 doc.autoTable({
                     startY: 42,
                     margin: { right: 110 }, 
-                    head: [['Concepto', 'Monto']],
+                    head: [['Concepto', 'Monto']], // Aquí sí dejamos la cabecera normal
                     body: bodyAct,
                     theme: 'plain',
                     styles: { fontSize: 8 },
@@ -442,11 +485,11 @@
             }
 
             doc.setFontSize(8);
-            //doc.text("Documento generado electrónicamente", 105, 290, {align: "center"});
+            doc.text("Documento generado electrónicamente", 105, 290, {align: "center"});
             doc.save(`Balance_${empresa}_${tipo}.pdf`);
         }
 
-        // Calcular resultados en front
+        // Calculo de resultados
         async function calcularResultados() {
             const empresa = getEmpresa();
             if (!empresa) return alert("Selecciona empresa");
@@ -479,7 +522,6 @@
             });
             const d = await res.json();
             
-
             const html = `
                 <div class='result-row'><span>Ventas Netas:</span> <strong style="color:var(--txt-blue)">${money.format(d.ventas_netas)}</strong></div>
                 <div class='result-row'><span>- Costo vendido:</span> <span>${money.format(d.costo_vendido)}</span></div>

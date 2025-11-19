@@ -225,3 +225,12 @@ def listar_empresas():
     # Devolvemos una lista simple de strings: ["Empresa A", "Empresa B"]
     lista_empresas = [f[0] for f in filas if f[0]]
     return lista_empresas
+
+@app.delete("/balance/borrar-cuenta/{id_cuenta}")
+def borrar_cuenta_individual(id_cuenta: int):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM cuentas_balance WHERE id = ?", (id_cuenta,))
+    conn.commit()
+    conn.close()
+    return {"msg": "Cuenta eliminada correctamente"}
